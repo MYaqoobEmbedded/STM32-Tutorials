@@ -1,0 +1,79 @@
+//1. Header files
+#include <stdio.h>  //printf
+#include <string.h> //
+
+//2. Printf 
+#ifdef __GNUC__
+  /* With GCC, small printf (option LD Linker->Libraries->Small printf
+     set to 'Yes') calls __io_putchar() */
+  #define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
+#else
+  #define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
+#endif /* __GNUC__ */
+
+PUTCHAR_PROTOTYPE
+{
+  /* Place your implementation of fputc here */
+  /* e.g. write a character to the EVAL_COM1 and Loop until the end of transmission */
+  HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, 0xFFFF);
+
+  return ch;
+}
+
+//3. fatfs.c extern variables
+extern char SDPath[4];   /* SD logical drive path */
+extern FATFS SDFatFS;    /* File system object for SD logical drive */
+extern FIL SDFile;       /* File object for SD */
+
+//4. FILE I/O variables
+FRESULT res;                                          /* FatFs function common result code */
+uint32_t byteswritten, bytesread;                     /* File write/read counts */
+uint8_t wtext[] = "Hello from Mohamed :), xx"; /* File write buffer */
+uint8_t rtext[100];                                   /* File read buffer */
+
+//5. File Operations
+	if(f_mount(&SDFatFS, (TCHAR const*)SDPath, 0) != FR_OK)
+	{
+		//Error
+		printf("Error Mounting SD Card\r\n");
+	}
+	//OK
+	else printf("SD Card mounted successfully!\r\n");
+	HAL_Delay(200);
+	
+		//Open file for writing (Create)
+	if(f_open(&SDFile, "F7FILE2.TXT", FA_CREATE_ALWAYS | FA_WRITE) != FR_OK)
+	{
+		//Error
+		printf("Error openning file\r\n");
+	}
+	else 
+	{
+		printf("File Openned Successfully!\r\n");
+		
+		//Write to the text file
+		res = f_write(&SDFile, wtext, strlen((char *)wtext), (void *)&byteswritten);
+		if((byteswritten == 0) || (res != FR_OK))
+		{
+			printf("Failed to write file!\r\n");
+		}
+		else printf("File written successfully\r\n");
+		
+		f_close(&SDFile);
+		
+		//Test read file
+		f_open(&SDFile, "F7FILE2.TXT",  FA_READ);
+		memset(rtext,0,sizeof(rtext));
+		res = f_read(&SDFile, rtext, sizeof(rtext), (UINT*)&bytesread);
+		if((bytesread == 0) || (res != FR_OK))
+		{
+			printf("Failed to read file!\r\n");
+		}
+		else 
+		{
+			printf("File read successfully\r\n");
+			printf("File content: %s\r\n", (char *)rtext);
+		}
+		f_close(&SDFile);
+	}
+	f_mount(&SDFatFS, (TCHAR const*)NULL, 0);
