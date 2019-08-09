@@ -1,0 +1,144 @@
+Step(1): CubeMX set up
+	- Enable CAN and map to PB8 and PB9 pins
+	- Enable CAN Rx interrupt
+================================
+
+Step(2): Declare Tx and Rx message typedef
+static CanTxMsgTypeDef myTxMessage;
+static CanRxMsgTypeDef myRxMessage;
+
+static void MX_CAN1_Init(void)
+{
+
+  hcan1.Instance = CAN1;
+	
+	hcan1.pTxMsg = &myTxMessage;
+	hcan1.pRxMsg = &myRxMessage;
+	
+  hcan1.Init.Prescaler = 16;
+  hcan1.Init.Mode = CAN_MODE_NORMAL;
+=================================
+
+Step(3): Can Filter config function
+static void CAN_FilterConfig(void)
+{
+  CAN_FilterConfTypeDef  sFilterConfig;
+  sFilterConfig.FilterNumber = 0;
+  sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
+  sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
+  sFilterConfig.FilterIdHigh = 0x000 <<5;
+  sFilterConfig.FilterIdLow = 0x0000;
+  sFilterConfig.FilterMaskIdHigh = 0x0000; //0xFFE0
+  sFilterConfig.FilterMaskIdLow = 0x0000;
+  sFilterConfig.FilterFIFOAssignment = 0;
+  sFilterConfig.FilterActivation = ENABLE;
+  sFilterConfig.BankNumber = 14;
+  
+  if(HAL_CAN_ConfigFilter(&hcan1, &sFilterConfig) != HAL_OK)
+  {
+    /* Filter configuration Error */
+    Error_Handler();
+  }
+}
+=================================
+
+Step(4): LED Switch function
+void LED_Switch(uint8_t led)
+{
+	/* Turn off all LEDs */
+	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
+	
+	  switch(led)
+  {
+    case(1): 
+      HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, GPIO_PIN_SET);
+      break;
+   
+    case(2): 
+      HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
+      break;
+ 
+    case(3): 
+      HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, GPIO_PIN_SET);
+      break;
+
+    case(4): 
+      HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_SET);
+      break;
+      
+    default:
+      break;
+  }	
+}
+=================================
+
+Step(5): Main Initialise functions call
+	//CAN filter config
+	CAN_FilterConfig();
+	
+	//Start CAN IT receive
+	if(HAL_CAN_Receive_IT(&hcan1, CAN_FIFO0) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  //Set transmission CAN paramters
+  hcan1.pTxMsg->StdId = 0x321;
+  hcan1.pTxMsg->RTR = CAN_RTR_DATA;
+  hcan1.pTxMsg->IDE = CAN_ID_STD;
+  hcan1.pTxMsg->DLC = 2;
+=================================
+
+Step(6): Transmit CAN data
+if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0) == GPIO_PIN_SET)
+{
+	if(dataVar == 0x4) dataVar = 0x00;
+	LED_Switch(++dataVar);
+	//Set data to be transmitted
+        hcan1.pTxMsg->Data[0] = dataVar;
+        hcan1.pTxMsg->Data[1] = 0x12;
+        //Transmit data via CAN
+        if(HAL_CAN_Transmit(&hcan1, 10) != HAL_OK)
+        {
+          Error_Handler();
+        }
+			HAL_Delay(300);
+}
+
+=================================
+
+Step(7): CAN receive callback
+void HAL_CAN_RxCpltCallback(CAN_HandleTypeDef* CanHandle)
+{
+  if (CanHandle->pRxMsg->StdId == 0x321)
+  {
+    dataVar = CanHandle->pRxMsg->Data[0];
+		LED_Switch(dataVar);
+  }
+  
+  /* Receive */
+  if(HAL_CAN_Receive_IT(CanHandle, CAN_FIFO0) != HAL_OK)
+  {
+    /* Reception Error */
+    Error_Handler();
+  }
+}
+=================================
+
+Step(8): Demonstrate Own and Remote ID
+//Own ID
+uint16_t canOwnDeviceID = 0x456; //0x456
+//Away ID
+uint16_t canRemoteDeviceID = 0x123; //0x123
+=================================
+
+Step(9): Filter test
+  sFilterConfig.FilterIdHigh = 0x123 <<5;
+  sFilterConfig.FilterIdLow = 0x0000;
+  sFilterConfig.FilterMaskIdHigh = 0xFFE0; //0xFFE0
+==================================
+
+
