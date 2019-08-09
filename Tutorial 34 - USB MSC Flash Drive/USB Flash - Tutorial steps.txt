@@ -1,0 +1,149 @@
+Step(1): CubeMX setup
+	- Enable LEDs and Button
+	- Enable USB_OTG_FS as Host only + VBUS
+	- USB Host as Mass Storage Host Class
+	- FatFS middleware select = USB Disk
+	- Enable HSE RCC
+	- Enable PC0 pin and set to OUTPUT (Power Switch enable for USB supply)
+	- MAX_SS = 4096 (FATFS Configuration parameters)
+========================================================
+
+Step(2): Flash Drive connected/disconnected indicator
+	- open usb_host.c and use this in main
+extern ApplicationTypeDef Appli_state;
+
+	- USB application states (LED ON when USB Flash Drive is connected)
+  		/* USER CODE BEGIN 3 */
+		switch(Appli_state)
+		{
+			case APPLICATION_READY:
+				break;
+			
+			case APPLICATION_IDLE:
+				break;
+			
+			case APPLICATION_DISCONNECT:
+				HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
+				break;
+			
+			case APPLICATION_START:			
+				HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
+				break;
+			
+			default:
+				break;
+		}
+=======================================================
+Step(3): Mount SD Card code
+
+	- Add FATFS variable
+//FatFS variable
+FATFS myUsbFatFS;
+
+	- open fatfs.c files and add USB logical path drive as extern in main
+extern char USBH_Path[4];
+
+	- Software mount of USB Flash Drive
+				case APPLICATION_START:			
+				/* Register the file system object to the FatFs module */
+				if(f_mount(&myUsbFatFS, (TCHAR const*)USBH_Path, 0) != FR_OK)
+				{
+					/* FatFs Initialization Error */
+					Error_Handler();
+				}
+				else
+				{
+					HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
+				}
+				break;
+=======================================================
+
+Step(4): Add File IO Variables
+//File IO Variables
+FIL myFile;
+FRESULT res;
+UINT byteswritten, bytesread;
+char rwtext[100];
+=======================================================
+
+Step(5): File write function
+	- Include string and boolean header files
+//String library
+#include <string.h>
+#include <stdbool.h>
+ 
+	- Test Write function body
+//1. USB test Write function
+bool UsbTest_Write(void)
+{
+	//Open/Create file for Writing
+	if(f_open(&myFile, "TEST.TXT", FA_CREATE_ALWAYS | FA_WRITE) != FR_OK) 
+	{
+		return 0; //error
+	}
+	else
+	{
+		//Set text string to write to file
+		sprintf(rwtext, "Hello world from Mohamed Yaqoob!");
+		//write to file
+		res = f_write(&myFile, (uint8_t *)rwtext, strlen(rwtext), &byteswritten);
+		if((byteswritten == 0) || (res != FR_OK))
+		{
+			return 0; //error
+		}
+	}
+	
+	//Close file
+	f_close(&myFile);
+	return 1; //success
+}
+
+	- Call write function in the main when button is pressed
+			case APPLICATION_READY:
+			if(HAL_GPIO_ReadPin(Button_GPIO_Port, Button_Pin) == GPIO_PIN_SET)
+			{
+				if(UsbTest_Write()) HAL_GPIO_TogglePin(LED4_GPIO_Port, LED4_Pin);
+				else HAL_GPIO_TogglePin(LED3_GPIO_Port, LED3_Pin);
+				HAL_Delay(1000);
+			}
+=======================================================
+
+Step(6): File read function
+
+//2. USB test Read function
+bool UsbTest_Read(void)
+{
+	//Open file for Reading
+	if(f_open(&myFile, "TEST.TXT", FA_READ) != FR_OK) 
+	{
+		return 0; //error
+	}
+	else
+	{
+		//Read text from files until NULL
+		for(uint8_t i=0; i<100; i++)
+		{
+			res = f_read(&myFile, (uint8_t*)&rwtext[i], 1, &bytesread);
+			if(rwtext[i] == 0x00)
+			{
+				bytesread = i;
+				break;
+			}
+		}
+		//Reading error handling
+		if(bytesread==0) return 0;
+	}
+	
+	//Close file
+	f_close(&myFile);
+	return 1; //success
+}
+
+	- Call read file function in the main
+			case APPLICATION_READY:
+			if(HAL_GPIO_ReadPin(Button_GPIO_Port, Button_Pin) == GPIO_PIN_SET)
+			{
+				if(UsbTest_Read()) HAL_GPIO_TogglePin(LED4_GPIO_Port, LED4_Pin);
+				else HAL_GPIO_TogglePin(LED3_GPIO_Port, LED3_Pin);
+				HAL_Delay(1000);
+			}
