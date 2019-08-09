@@ -1,0 +1,84 @@
+1. CubeMX Configurations:
+- Enable the LED on PI0
+- Enable CRC
+- Enable DMA2D
+- Enable RCC
+- Set Clock Source to External and 200 MHz System Clock speed
+
+2. Copy HAL h and c files specific for LTDC and SDRAM
+
+3. Copy GUI Files folder to your newly generated project
+
+4. Add paths and Source folder location and compile.
+
+5. Do the following
+
+*main.h includes*
+#include "stm32f7xx_hal.h"
+
+#include "stm32746g_discovery.h"
+#include "stm32746g_discovery_sdram.h"
+#include "stm32746g_discovery_ts.h"
+#include "stm32746g_discovery_lcd.h"
+
+Step(6): Uncomment the following into the stm32f7xx_hal_conf.h:
+--------------------------------
+#define HAL_SDRAM_MODULE_ENABLED
+#define HAL_LTDC_MODULE_ENABLED
+#define HAL_UART_MODULE_ENABLED
+
+
+Step(7): Modify STM32F7xx_it.c to include the following:
+-----------------------------
+extern LTDC_HandleTypeDef hLtdcHandler;
+
+/* USER CODE BEGIN 1 */
+void LTDC_IRQHandler(void)
+{
+  HAL_LTDC_IRQHandler(&hLtdcHandler);
+}
+/* USER CODE END 1 */
+
+Step(8): Main initialization
+----------------------------
+/* USER CODE BEGIN 0 */
+TS_StateTypeDef  ts;
+
+char xTouchStr[10];
+/* USER CODE END 0 */
+
+/* USER CODE BEGIN 1 */
+/* Enable the CPU Cache */
+/* Enable I-Cache */
+SCB_EnableICache();
+/* Enable D-Cache */
+SCB_EnableDCache();
+
+/* USER CODE END 1 */
+
+BSP_SDRAM_Init(); /* Initializes the SDRAM device */
+  __HAL_RCC_CRC_CLK_ENABLE(); /* Enable the CRC Module */
+
+  BSP_TS_Init(480, 272);
+
+  BSP_LCD_Init();
+  BSP_LCD_LayerDefaultInit(0, LCD_FB_START_ADDRESS);
+  BSP_LCD_DisplayOn();
+
+  BSP_LCD_SelectLayer(0);
+  BSP_LCD_Clear(LCD_COLOR_BLUE);
+
+
+  BSP_LCD_DisplayStringAt(20, 20, (uint8_t *)"Hello!", LEFT_MODE);
+
+Step(9): While 1 main
+-------------------------
+	  BSP_TS_GetState(&ts);
+	  sprintf(xTouchStr, "X: %3d", ts.touchX[0]);
+	  BSP_LCD_DisplayStringAt(20, 20, (uint8_t *)xTouchStr, LEFT_MODE);
+
+	  sprintf(xTouchStr, "Y: %3d", ts.touchY[0]);
+	  BSP_LCD_DisplayStringAt(20, 60, (uint8_t *)xTouchStr, LEFT_MODE);
+	  HAL_Delay(50);
+
+
