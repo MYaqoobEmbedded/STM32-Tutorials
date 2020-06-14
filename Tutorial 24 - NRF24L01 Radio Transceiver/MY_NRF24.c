@@ -648,8 +648,10 @@ bool NRF24_availablePipe(uint8_t* pipe_num)
 //40. Start write (for IRQ mode)
 void NRF24_startWrite( const void* buf, uint8_t len )
 {
-	// Transmitter power-up
+  // Transmitter power-up
+  NRF24_ce(0);
   NRF24_write_register(REG_CONFIG, ( NRF24_read_register(REG_CONFIG) | _BV(BIT_PWR_UP) ) & ~_BV(BIT_PRIM_RX) );
+  NRF24_ce(1);
   NRF24_DelayMicroSeconds(150);
 
   // Send the payload
