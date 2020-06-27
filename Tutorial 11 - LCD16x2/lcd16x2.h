@@ -99,7 +99,7 @@ void lcd16x2_shiftRight(uint8_t offset);
 void lcd16x2_shiftLeft(uint8_t offset);
 
 /**
- * @brief Print to display any datatype (e.g. lcd16x2_printf("Value1 = %f", 123.45))
+ * @brief Print to display any datatype (e.g. lcd16x2_printf("Value1 = %.1f", 123.45))
  */
 void lcd16x2_printf(const char* str, ...);
 
