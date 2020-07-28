@@ -51,7 +51,7 @@ void DHT22_Init(GPIO_TypeDef* DataPort, uint16_t DataPin)
 static void ONE_WIRE_PinMode(OnePinMode_Typedef mode)
 {
 	GPIO_InitTypeDef GPIO_InitStruct;
-	GPIO_InitStruct.Pin = GPIO_PIN_9;
+	GPIO_InitStruct.Pin = oneWire_PIN;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	
@@ -67,7 +67,7 @@ static void ONE_WIRE_PinMode(OnePinMode_Typedef mode)
 		GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
 	}
 	
-	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+	HAL_GPIO_Init(oneWire_PORT, &GPIO_InitStruct);
 }	
 //One Wire pin HIGH/LOW Write
 static void ONE_WIRE_Pin_Write(bool state)
