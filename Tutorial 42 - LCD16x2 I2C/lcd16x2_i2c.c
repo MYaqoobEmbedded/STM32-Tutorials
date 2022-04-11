@@ -2,6 +2,7 @@
  * lcd16x2_i2c.c
  *
  *  Created on: Mar 28, 2020
+ *  modified on : April 4 2022 by Zorrovicky
  *      Author: Mohamed Yaqoob
  */
 
@@ -46,7 +47,7 @@
 static I2C_HandleTypeDef* lcd16x2_i2cHandle;
 static uint8_t LCD_I2C_SLAVE_ADDRESS=0;
 #define LCD_I2C_SLAVE_ADDRESS_0  0x4E
-#define LCD_I2C_SLAVE_ADDRESS_1  0x7E
+#define LCD_I2C_SLAVE_ADDRESS_1  0x27
 
 /* Private functions */
 static void lcd16x2_i2c_sendCommand(uint8_t command)
