@@ -50,6 +50,16 @@ void lcd16x2_i2c_cursorShow(bool state);
 void lcd16x2_i2c_clear(void);
 
 /**
+ * @brief Turn ON/OFF LCD backlight
+ */
+void lcd16x2_i2c_backlight_control(uint8_t state);
+
+/**
+ * @brief Toggle LCD backlight
+ */
+void lcd16x2_i2c_backlight_toggle(void);
+
+/**
  * @brief Display ON/OFF, to hide all characters, but not cl/*
  * lcd16x2_i2c.c
  *
@@ -92,13 +102,26 @@ void lcd16x2_i2c_clear(void);
 #define LCD_RS        (1 << 0)
 #define LCD_RW        (1 << 1)
 #define LCD_EN        (1 << 2)
-#define LCD_BK_LIGHT  (1 << 3)
+// #define LCD_BK_LIGHT  (1 << 3)
+static uint8_t LCD_BK_LIGHT_STATE;
+#define LCD_BK_LIGHT  (LCD_BK_LIGHT_STATE << 3)
 
 /* Library variables */
 static I2C_HandleTypeDef* lcd16x2_i2cHandle;
 static uint8_t LCD_I2C_SLAVE_ADDRESS=0;
 #define LCD_I2C_SLAVE_ADDRESS_0  0x4E
 #define LCD_I2C_SLAVE_ADDRESS_1  0x7E
+
+/* Private functions */
+void lcd16x2_i2c_backlight_control(uint8_t state)
+{
+	(state == 0) ? (LCD_BK_LIGHT_STATE = 0) : (LCD_BK_LIGHT_STATE = 1);
+}
+
+
+void lcd16x2_i2c_backlight_toggle(void){
+	LCD_BK_LIGHT_STATE ^= 1;
+}
 
 /* Private functions */
 static void lcd16x2_i2c_sendCommand(uint8_t command)
